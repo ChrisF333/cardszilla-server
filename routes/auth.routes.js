@@ -120,11 +120,81 @@ router.get('/verify', isAuthenticated, (req, res, next) => {
   });
 
 
+
+//GET user for account page
+router.get('/account', isAuthenticated, (req, res, next) => {
+    const { _id, email, username } = req.payload
+
+    User.findById(_id)
+    .then((foundUser) => {
+        const sendUser = { _id, username, email }
+        res.status(200).json( {user: sendUser});
+    })
+
+
+});
+
 // TO DO
 //POST to update user
+router.put('/account', isAuthenticated, (req,res,next) => {
+    const { username, email, password } = req.body;
 
-//GET for user owned clubs (using populate)
+    //Field validations:
+     //Check all fields are present
+     if (username === '' || email === '' || password === '' ) {
+         res.status(400).json({message: "Please complete all fields before submitting"});
+         return;
+     }
+
+     //Check for valid email format using regex
+     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+     if (!emailRegex.test(email)) {
+         res.status(400).json({message: "Please provide a valid email address"});
+         return;
+     }
+
+     //Check for valid password format using regex
+     const passwordRegex = /(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}/;  //was {6,}
+
+     if (!passwordRegex.test(password)) {
+         res.status(400).json({ message: "Password must be at least 8 characters and contain at least one number and both lowercase and uppercase letters"});
+         return;
+     }
+
+     //Update the details
+     User.findOne({email})
+     .then((foundUser) => {
+
+         const salt = bcrypt.genSaltSync(saltRounds);
+         const hashedPassword = bcrypt.hashSync(password, salt);
+
+         return User.updateOne({username, email, password: hashedPassword});
+     })
+     .then((createdUser) => { //return the created user without the password, for confirmation
+        const { username, email, _id} = createdUser;
+        const user = {username, email, _id};
+        res.status(200).json({user: user}); //200 means 'ok'
+     })
+     .catch(err => {
+         console.log(err);
+         res.status(500).json({message: "Server error on user details update"});
+     })         
+});
 
 //DELETE user
+router.post("/account/delete", isAuthenticated, (req,res,next) => {
+    const { _id, email, username } = req.payload
+
+    User.findOneAndRemove(_id)
+    .then((removedResponse) => {
+        res.status(200).json({message: "Account deleted"});
+    })
+    .catch(err => {
+        console.log(err);
+        res.status(500).json({message: "Error on account deletion"})
+    })
+});
+
 
 module.exports = router;
