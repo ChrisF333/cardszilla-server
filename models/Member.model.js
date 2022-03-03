@@ -1,3 +1,6 @@
+
+//Member.model.js
+
 const { Schema, model} = require('mongoose');
 
 const memberSchema = new Schema (

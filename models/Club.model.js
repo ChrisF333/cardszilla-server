@@ -31,6 +31,7 @@ const clubSchema = new Schema (
                 ,ref: "User"
             }
         ],
+        picture: String,
     },
     {
         timestamps: true, //`createdAt` and `updatedAt`
