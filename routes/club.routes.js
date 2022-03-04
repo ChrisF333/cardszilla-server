@@ -49,5 +49,25 @@ router.post("/create", isAuthenticated, (req, res, next) => {
      });
 });
 
+// ***** GET for /clubDetails/:id
+router.get("/clubDetails/:id", (req, res, next) => { //does not require authentication so that owner can share with members
+    const { id } = req.params;
+    
+    Club.findById(id)
+    .populate('games')
+    .then((foundClub) => {
+        if(!foundClub) {
+            res.status(404).json({message: "Club not found"})
+        }
+     
+        console.log(foundClub);
+        res.status(200).json({club: foundClub})
+        })
+        .catch(err => {
+            console.log(err);
+            res.status(500).json({message: "Server error on club creation"});
+        });
+});
+
 
 module.exports = router;
