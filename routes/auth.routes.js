@@ -109,7 +109,7 @@ router.post('/login', (req,res,next) => {
     .catch(err => res.status(500).json({ message: "Error while logging in"}));
 });
 
-// GET  /auth/verify  -  Used to verify JWT token stored on the client
+// ***** GET  /auth/verify  -  Used to verify JWT token stored on the client
 router.get('/verify', isAuthenticated, (req, res, next) => {      
  
     // If JWT token is valid the payload gets decoded by the isAuthenticated middleware and made available on `req.payload`
@@ -121,7 +121,7 @@ router.get('/verify', isAuthenticated, (req, res, next) => {
 
 
 
-//GET user for account page
+// ***** GET user for account page
 router.get('/account', isAuthenticated, (req, res, next) => {
     const { _id, email, username } = req.payload
 
@@ -135,7 +135,7 @@ router.get('/account', isAuthenticated, (req, res, next) => {
 });
 
 // TO DO
-//POST to update user
+// ***** POST to update user
 router.put('/account', isAuthenticated, (req,res,next) => {
     const { username, email, password } = req.body;
 
@@ -182,7 +182,7 @@ router.put('/account', isAuthenticated, (req,res,next) => {
      })         
 });
 
-//DELETE user
+// ***** DELETE user
 router.post("/account/delete", isAuthenticated, (req,res,next) => {
     const { _id, email, username } = req.payload
 
