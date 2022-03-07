@@ -6,8 +6,10 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/User.model");
 const Club = require("../models/Club.model");
 const Game = require("../models/Game.model");
+const Record = require("../models/Record.model");
 const { isAuthenticated } = require('./../middleware/jwt.middleware.js'); 
 const router = require("./auth.routes");
+const Member = require("../models/Member.model");
 
 // ROUTES //
 
@@ -39,8 +41,8 @@ router.post("/create", isAuthenticated, (req, res, next) => {
 
     return Club.create({ name: name, games: games, owner: _id})
      .then((createdClub) => { //return the created Club
-        const { name, games } = createdClub;
-        const club = { name, games };
+        const { _id, name, games } = createdClub;
+        const club = { _id, name, games };
         res.status(201).json({club: club}); //201 means 'created'
      })
      .catch(err => {
@@ -55,6 +57,7 @@ router.get("/clubDetails/:id", (req, res, next) => { //does not require authenti
     
     Club.findById(id)
     .populate('games')
+    .populate('members')
     .then((foundClub) => {
         if(!foundClub) {
             res.status(404).json({message: "Club not found"})
@@ -65,9 +68,88 @@ router.get("/clubDetails/:id", (req, res, next) => { //does not require authenti
         })
         .catch(err => {
             console.log(err);
-            res.status(500).json({message: "Server error on club creation"});
+            res.status(500).json({message: "Server error on retrieving club details"});
         });
 });
 
+// ***** GET for /clubRecordCard/:id
+router.get('/clubRecordCard/:id', (req,res, next) => {
+    const { id } = req.params;
+
+    if(id === "undefined") {
+        res.status(200).json({message: "No record found for this club"})
+    } else {
+        Record.findById(id).sort({ _id: -1}).limit(5) //sort to get most recent records and limit to last five
+        .then((foundRecords) => {
+            if(!foundRecords) {
+                res.status(200).json({message: "No events found"})
+            }
+
+            console.log(foundRecords);
+            res.status(200).json({recordCard: foundRecords})
+        })
+        .catch(err => {
+            console.log(err);
+            res.status(500).json({message: "Error retrieving record card"})
+        });
+    }
+})
+
+// ***** POST for /createMember/:id
+router.post('/createMember/:id', (req,res, next) => {
+    const { id } = req.params;
+    const { name, nickname, wins, losses } = req.body;
+
+    Member.create( {name: name, nickname: nickname, wins: wins, losses: losses}) 
+    .then((newMember) => {
+       return Club.findByIdAndUpdate(id, {$push: {members: newMember._id}}); //must return for this to take effect
+    })
+    .then(() => {
+        res.status(201).json({message: "Member created and added to club"})
+    })
+    .catch(err => {
+        console.log(err);
+        res.status(500).json({message: "Error on adding member"})
+    });
+    
+})
+
+// ***** POST for /createEvent/:id
+router.post('/createEvent/:id', (req,res, next) => {
+    const { id } = req.params;
+    const { record, game, winner, participants } = req.body;
+
+    if (!record) { //if there's no record yet, we need to create one and add it to the club
+        Record.create({record: { game: game, winner: winner, participants: participants }})
+        .then((newRecord) => {
+            return Club.findByIdAndUpdate(id, {$set: { record: newRecord._id}});
+        })
+        .then(() => {
+            res.status(201).json({message: "Record and event created and added to club"})
+        })
+        .catch(err => {
+            console.log(err);
+            res.status(500).json({message: "Error on creating event"});
+        });
+    } else { //if there is a record then we need to find and update it with the new event
+        Record.findByIdAndUpdate(record, {$push: {record: {game: game, winner: winner, participants: participants}}})
+        .then((newRecord) => {
+            const latestObjectNumber = newRecord.length
+            Record.updateOne(
+                 { record: { $elemMatch: { _id: newRecord._id } } },
+                 {
+                     $push: { "record.$.participants": participants}
+                 }
+            )
+        })
+        .then(() => {
+            res.status(201).json({message: "Event created and added to club"})
+        })
+        .catch(err => {
+            console.log(err);
+            res.status(500).json({message: "Error on adding event"});
+        });
+    }
+})
 
 module.exports = router;
