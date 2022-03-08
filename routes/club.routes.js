@@ -62,8 +62,6 @@ router.get("/clubDetails/:id", (req, res, next) => { //does not require authenti
         if(!foundClub) {
             res.status(404).json({message: "Club not found"})
         }
-     
-        console.log(foundClub);
         res.status(200).json({club: foundClub})
         })
         .catch(err => {
@@ -79,13 +77,20 @@ router.get('/clubRecordCard/:id', (req,res, next) => {
     if(id === "undefined") {
         res.status(200).json({message: "No record found for this club"})
     } else {
-        Record.findById(id).sort({ _id: -1}).limit(5) //sort to get most recent records and limit to last five
+        Record.findById(id) //foundRecords.sort({ eventDate: -1}).limit(5) //sort to get most recent records and limit to last five
+        .populate('record.game')
+        .populate('record.winner')
         .then((foundRecords) => {
             if(!foundRecords) {
                 res.status(200).json({message: "No events found"})
             }
-
-            console.log(foundRecords);
+           /* //sort by event date and then filter last five events for return
+            let forReturn = foundRecords.record
+            forReturn = forReturn.sort(function(a, b) {
+                return b.eventDate - a.eventDate;
+             });
+            forReturn = forReturn.slice(0,5)*/
+    
             res.status(200).json({recordCard: foundRecords})
         })
         .catch(err => {
@@ -117,10 +122,10 @@ router.post('/createMember/:id', (req,res, next) => {
 // ***** POST for /createEvent/:id
 router.post('/createEvent/:id', (req,res, next) => {
     const { id } = req.params;
-    const { record, game, winner, participants } = req.body;
-
+    const { record, eventDate, game, winner, participants } = req.body;
+    
     if (!record) { //if there's no record yet, we need to create one and add it to the club
-        Record.create({record: { game: game, winner: winner, participants: participants }})
+        Record.create({record: { eventDate: eventDate, game: game, winner: winner, participants: participants }})
         .then((newRecord) => {
             return Club.findByIdAndUpdate(id, {$set: { record: newRecord._id}});
         })
@@ -132,7 +137,7 @@ router.post('/createEvent/:id', (req,res, next) => {
             res.status(500).json({message: "Error on creating event"});
         });
     } else { //if there is a record then we need to find and update it with the new event
-        Record.findByIdAndUpdate(record, {$push: {record: {game: game, winner: winner, participants: participants}}})
+        Record.findByIdAndUpdate(record, {$push: {record: {eventDate: eventDate, game: game, winner: winner, participants: participants}}})
         .then((newRecord) => {
             const latestObjectNumber = newRecord.length
             Record.updateOne(
@@ -150,6 +155,15 @@ router.post('/createEvent/:id', (req,res, next) => {
             res.status(500).json({message: "Error on adding event"});
         });
     }
+})
+
+router.post('/deleteEvent/:id', (req,res, next) => {
+    console.log(req.params, req.body.eventId);
+    Record.findOneAndUpdate({ _id: req.params},
+        { $pull: { record: { _id: req.body.eventId }}},
+        {safe: true, multi:false}        
+    );
+    return res.status(200).json({ message: "Event deleted" });
 })
 
 module.exports = router;

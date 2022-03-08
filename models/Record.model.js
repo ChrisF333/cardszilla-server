@@ -6,25 +6,28 @@ const {Schema, model} = require('mongoose');
 const recordSchema = new Schema (
     {record: 
         [
-            {
-                eventDate: Date,
-            game: { 
-                type: Schema.Types.ObjectId
-                ,ref: "Game"
-            },
-            winner: {
-                type: Schema.Types.ObjectId
-                ,ref: "Member"
-            },
-            particpants: [
-                {
+            { 
+                eventDate: {
+                    type: Date
+                },
+                game: { 
+                    type: Schema.Types.ObjectId
+                    ,ref: "Game"
+                },
+                winner: {
                     type: Schema.Types.ObjectId
                     ,ref: "Member"
-                }
-            ]
+                },
+                particpants: [
+                    {
+                        type: Schema.Types.ObjectId
+                        ,ref: "PMember"
+                    }
+                ]
             },
             {
-                timestamps: true, //`createdAt` and `updatedAt`
+                // this second object adds extra properties: `createdAt` and `updatedAt`
+                timestamps: true,
             }
         ],         
     }    
