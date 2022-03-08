@@ -28,6 +28,7 @@ router.get("/create", (req, res, next) => {
 router.post("/create", isAuthenticated, (req, res, next) => {
     const { name, games } = req.body;
     const { _id } = req.payload;
+    const userId = _id;
 
     if ( name === "") {
         res.status(400).json({message: "Your club must have a name!"});
@@ -44,12 +45,43 @@ router.post("/create", isAuthenticated, (req, res, next) => {
         const { _id, name, games } = createdClub;
         const club = { _id, name, games };
         res.status(201).json({club: club}); //201 means 'created'
+        return User.findByIdAndUpdate( userId, {$push: {ownedClubs: club._id}} );        
      })
      .catch(err => {
          console.log(err);
          res.status(500).json({message: "Server error on club creation"});
      });
 });
+
+// ***** PUT for /update clubs
+router.put('/update/:id', (req, res, next) => {
+    const { name, games } = req.body;
+    const { id } = req.params;
+
+    Club.findByIdAndUpdate(id, {$set: {name: name, games: games}})
+    .then(() => {
+        res.status(200).json({message: "Club updated"}); 
+    })
+    .catch(err => {
+        console.log(err);
+        res.status(500).json({message: "Server error on club update"});
+    });
+})
+
+// ***** GET for /getUserClubs
+router.get('/userClubs', isAuthenticated, (req, res, next) => {
+    const { _id } = req.payload
+
+    User.findById(_id)
+    .populate('ownedClubs')
+    .then((foundClubs) => {
+        res.status(200).json( {clubs: foundClubs});
+    })
+    .catch(err => {
+        console.log(err);
+        res.status(500).json({message: "Server error on club search"});
+    });
+})
 
 // ***** GET for /clubDetails/:id
 router.get("/clubDetails/:id", (req, res, next) => { //does not require authentication so that owner can share with members
@@ -157,13 +189,48 @@ router.post('/createEvent/:id', (req,res, next) => {
     }
 })
 
+//***** POST for /deleteEvent/:id
 router.post('/deleteEvent/:id', (req,res, next) => {
-    console.log(req.params, req.body.eventId);
-    Record.findOneAndUpdate({ _id: req.params},
-        { $pull: { record: { _id: req.body.eventId }}},
-        {safe: true, multi:false}        
+    //console.log(req.params, req.body.eventId);
+    const { id } = req.params;
+    const { eventId } = req.body;
+    
+    Record.findOneAndUpdate({ _id: id},
+        { $pull: { record: { _id: eventId }}},
+        function(err,result){
+            console.log(result);
+        }        
     );
     return res.status(200).json({ message: "Event deleted" });
+})
+
+//***** POST for /deleteMember/
+router.post('/deleteMember/', (req,res, next) => {
+    const { memberId } = req.body;
+    
+    Member.findByIdAndRemove(memberId)
+    .then(() => {
+        return res.status(200).json({ message: "Member deleted" });
+    })
+    .catch(err => {
+        console.log(err);
+        res.status(500).json({message: "Error on deleting member"});
+    })
+})
+
+// ***** POST for /delete/ club
+router.post('/delete/', (req,res, next) => {
+    const { clubId } = req.body;
+
+    Club.findByIdAndRemove(clubId)
+    .then(() => {
+        return res.status(200).json({ message: "Club deleted" });
+    })
+    .catch(err => {
+        console.log(err);
+        res.status(500).json({message: "Error on deleting club"});
+    })
+
 })
 
 module.exports = router;
