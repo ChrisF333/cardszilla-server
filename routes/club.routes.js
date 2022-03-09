@@ -180,6 +180,13 @@ router.post('/createEvent/:id', (req,res, next) => {
             )
         })
         .then(() => {
+            Member.findByIdAndUpdate(winner, {$inc: {wins: 1}} ).exec();
+            const losers = participants.filter(a => a != winner);
+            for( let i = 0; i < losers.length; i++) {
+                Member.findByIdAndUpdate(losers[i], {$inc: {losses: 1}}).exec();
+            }
+        })
+        .then(() => {
             res.status(201).json({message: "Event created and added to club"})
         })
         .catch(err => {
