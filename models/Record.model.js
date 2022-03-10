@@ -18,7 +18,7 @@ const recordSchema = new Schema (
                     type: Schema.Types.ObjectId
                     ,ref: "Member"
                 },
-                particpants: [
+                participants: [
                     {
                         type: Schema.Types.ObjectId
                         ,ref: "PMember"
