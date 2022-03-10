@@ -1,6 +1,9 @@
 {
   "name": "cardszilla-server-server",
   "version": "0.0.0",
+  "engines": {
+    "node": "17.4.0"
+  },
   "private": true,
   "scripts": {
     "start": "node server.js",
