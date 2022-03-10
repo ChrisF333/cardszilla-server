@@ -7,7 +7,7 @@
     <img src="main/Assets/Images/Others/our_host.png" alt="Logo" width="80" height="80"> -->
   </a>
 
-<h3 align="center">Cardspedia</h3>
+<h3 align="center">Cardszilla</h3>
 
   <p align="center">
     A full stack application designed for Project Three of the Ironhack bootcamp
